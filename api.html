@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kembang Api Petasan Neon</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: black;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    canvas {
+      display: block;
+    }
+    #btnLaunch {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      font-size: 18px;
+      border: none;
+      background-color: gold;
+      color: black;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 10;
+    }
+    #message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 38px;
+      color: #ff00ff;
+      font-weight: bold;
+      display: none;
+      z-index: 20;
+      text-shadow:
+        0 0 5px #fff,
+        0 0 10px #f0f,
+        0 0 20px #f0f,
+        0 0 40px #f0f,
+        0 0 80px #f0f;
+      animation: neon-blink 0.8s infinite alternate;
+    }
+
+    @keyframes neon-blink {
+      0% { opacity: 1; }
+      100% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+  <button id="btnLaunch">Mulai Petasan</button>
+  <div id="message">udah kontol cape🗿</div>
+  <canvas id="fireworks"></canvas>
+
+  <script>
+    const canvas = document.getElementById('fireworks');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    const particles = [];
+    const rockets = [];
+    const clickTimes = [];
+
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    class Rocket {
+      constructor(x, y, targetY, isBig = false, showMessage = false) {
+        this.x = x;
+        this.y = y;
+        this.targetY = targetY;
+        this.speed = 6;
+        this.done = false;
+        this.color = 'white';
+        this.isBig = isBig;
+        this.showMessage = showMessage;
+      }
+
+      update() {
+        this.y -= this.speed;
+        if (this.y <= this.targetY) {
+          this.done = true;
+          createExplosion(this.x, this.y, this.isBig, this.showMessage);
+        }
+      }
+
+      draw(ctx) {
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y + 10);
+        ctx.lineTo(this.x, this.y);
+        ctx.stroke();
+      }
+    }
+
+    class Particle {
+  constructor(x, y, color, size = 5, neon = false) {
+    this.x = x;
+    this.y = y;
+    this.radius = size; // 🔺 Ukuran partikel besar
+    this.color = color;
+    this.speed = random(3, 12); // 🔺 Lebih cepat nyebar (tapi kita slowin nanti)
+    this.angle = random(0, 2 * Math.PI);
+    this.life = 180;
+    this.alpha = 1;
+    this.neon = neon;
+  }
+
+  update() {
+    this.speed *= 0.94; // 🔻 Perlambat gerak bertahap
+    this.x += Math.cos(this.angle) * this.speed;
+    this.y += Math.sin(this.angle) * this.speed + 0.4;
+    this.alpha -= 0.007;
+    this.life--;
+  }
+
+  draw(ctx) {
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    if (this.neon) {
+      ctx.shadowBlur = 50; // 🔺 Super neon
+      ctx.shadowColor = this.color;
+    }
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function createExplosion(x, y, isBig = false, showMessage = false) {
+  const neonColors = ['#ff00ff', '#00ffff', '#ffff00', '#00ff00', '#ff0000', '#ffffff'];
+  const count = isBig ? 500 : 150;
+  const size = isBig ? 8 : 5;
+
+  let color;
+  if (!isBig) {
+    // Petasan biasa: 1 warna acak
+    color = neonColors[Math.floor(Math.random() * neonColors.length)];
+  }
+
+  for (let i = 0; i < count; i++) {
+    const neon = isBig || Math.random() < 0.3;
+    const particleColor = isBig
+      ? neonColors[Math.floor(Math.random() * neonColors.length)] // warna-warni
+      : color; // 1 warna aja
+
+    particles.push(new Particle(x, y, particleColor, size, neon));
+  }
+
+  if (showMessage) {
+    const msg = document.getElementById('message');
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 2500);
+  }
+}
+
+
+
+    document.getElementById('btnLaunch').addEventListener('click', () => {
+      const now = Date.now();
+      clickTimes.push(now);
+      const recentClicks = clickTimes.filter(t => now - t < 5000);
+
+      if (recentClicks.length >= 10) {
+        clickTimes.length = 0;
+        const x = canvas.width / 2;
+        const y = canvas.height;
+        const targetY = random(canvas.height * 0.2, canvas.height * 0.4);
+        rockets.push(new Rocket(x, y, targetY, true, true));
+      } else {
+        const x = random(canvas.width * 0.2, canvas.width * 0.8);
+        const y = canvas.height;
+        const targetY = random(canvas.height * 0.3, canvas.height * 0.6);
+        rockets.push(new Rocket(x, y, targetY));
+      }
+    });
+
+    function animate() {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      rockets.forEach((rocket, i) => {
+        rocket.update();
+        rocket.draw(ctx);
+        if (rocket.done) {
+          rockets.splice(i, 1);
+        }
+      });
+
+      particles.forEach((p, i) => {
+        p.update();
+        p.draw(ctx);
+        if (p.life <= 0 || p.alpha <= 0) {
+          particles.splice(i, 1);
+        }
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
